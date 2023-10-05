@@ -51,7 +51,7 @@ var log *logrus.Logger
 var tracer trace.Tracer
 var resource *sdkresource.Resource
 var initResourcesOnce sync.Once
-var req_counter = meter.Int64Counter
+//var req_counter = meter.Int64Counter
 
 func init() {
 	log = logrus.New()
@@ -152,7 +152,7 @@ func main() {
 	}
 
 	tracer = tp.Tracer("checkoutservice")
-	req_counter, _ := mp.Int64Counter("app_checkoutservice_payreq")
+	//req_counter, _ := mp.Int64Counter("app_checkoutservice_payreq")
 
 	svc := new(checkoutService)
 	mustMapEnv(&svc.shippingSvcAddr, "SHIPPING_SERVICE_ADDR")
@@ -210,8 +210,7 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq
 		attribute.String("app.user.id", req.UserId),
 		attribute.String("app.user.currency", req.UserCurrency),
 	)
-	log.Infof("[PlaceOrder] user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
-	log.Infof("Did we change anything?")
+	log.Infof("[PlaceOrder] (call to paymentservice) user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
 
 	var err error
 	defer func() {
@@ -246,6 +245,7 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq
 		return nil, status.Errorf(codes.Internal, "failed to charge card: %+v", err)
 	}
 	log.Infof("payment went through (transaction_id: %s)", txID)
+	//req_counter.Add(context.Background(), 1)
 	span.AddEvent("charged",
 		trace.WithAttributes(attribute.String("app.payment.transaction.id", txID)))
 
