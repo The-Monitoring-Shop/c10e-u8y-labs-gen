@@ -47,7 +47,7 @@ export const NavBarBrand = styled(Link)`
 `;
 
 export const BrandImg = styled.img.attrs({
-  src: '/images/opentelemetry-demo-logo.png',
+  src: '/images/skywatcher_logo.png',
 })`
   width: 280px;
   height: auto;
