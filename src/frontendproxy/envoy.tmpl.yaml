@@ -37,7 +37,7 @@ static_resources:
                         - match: { prefix: "/loadgen" }
                           route: { cluster: loadgen, prefix_rewrite: "/" }
                         - match: { prefix: "/otlp-http/" }
-                          route: { cluster: opentelemetry_collector_http, prefix_rewrite: "/" }
+                          route: { cluster: opentelemetry_collector, prefix_rewrite: "/" }
                         - match: { prefix: "/jaeger" }
                           route: { cluster: jaeger }
                         - match: { prefix: "/grafana" }
@@ -50,7 +50,7 @@ static_resources:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
   clusters:
-    - name: opentelemetry_collector_grpc
+    - name: opentelemetry_collector
       type: STRICT_DNS
       lb_policy: ROUND_ROBIN
       typed_extension_protocol_options:
@@ -59,19 +59,7 @@ static_resources:
           explicit_http_config:
             http2_protocol_options: {}
       load_assignment:
-        cluster_name: opentelemetry_collector_grpc
-        endpoints:
-          - lb_endpoints:
-              - endpoint:
-                  address:
-                    socket_address:
-                      address: ${OTEL_COLLECTOR_HOST}
-                      port_value: ${OTEL_COLLECTOR_PORT}
-    - name: opentelemetry_collector_http
-      type: STRICT_DNS
-      lb_policy: ROUND_ROBIN
-      load_assignment:
-        cluster_name: opentelemetry_collector_http
+        cluster_name: opentelemetry_collector
         endpoints:
           - lb_endpoints:
               - endpoint:
