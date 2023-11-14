@@ -9,6 +9,14 @@ import { AttributeNames } from '../enums/AttributeNames';
 
 const meter = metrics.getMeter('frontend');
 const requestCounter = meter.createCounter('app.frontend.requests');
+const errorCounter = meter.createCounter('app.frontend.errors');
+const { AD_SERVICE_ADDR = '' } = process.env;
+const { CART_SERVICE_ADDR = '' } = process.env;
+const { CURRENCY_SERVICE_ADDR = '' } = process.env;
+const { SHIPPING_SERVICE_ADDR = '' } = process.env;
+const { CHECKOUT_SERVICE_ADDR = '' } = process.env;
+const { PRODUCT_CATALOG_SERVICE_ADDR = '' } = process.env;
+const { RECOMMENDATION_SERVICE_ADDR = '' } = process.env;
 
 const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
   return async (request, response) => {
@@ -44,17 +52,68 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
       span.setAttribute(AttributeNames.SESSION_ID, request.query['sessionId']);
     }
 
+    let gateway = "";
+    let gateway_addr = "";
+
+    let api = "none";
+    
+    if(target.split('/').length > 2)
+    {
+    	api = target.split('/')[2];	    
+    }
+
+    if(api == "data")
+    {
+            gateway = "adservice";
+            gateway_addr = AD_SERVICE_ADDR;
+    }
+    if(api == "cart")
+    {
+            gateway = "cartservice";
+            gateway_addr = CART_SERVICE_ADDR;
+    }
+    if(api == "currency")
+    {
+            gateway = "currencyservice";
+            gateway_addr = CURRENCY_SERVICE_ADDR;
+    }
+    if(api == "shipping")
+    {
+            gateway = "shippingservice";
+            gateway_addr = SHIPPING_SERVICE_ADDR;
+    }
+    if(api == "checkout")
+    {
+            gateway = "checkoutservice";
+            gateway_addr = CHECKOUT_SERVICE_ADDR;
+    }
+    if(api == "products")
+    {
+            gateway = "productcatalogeservice";
+            gateway_addr = PRODUCT_CATALOG_SERVICE_ADDR;
+    }
+    if(api == "recommendations")
+    {
+            gateway = "recommendationservice";
+            gateway_addr = RECOMMENDATION_SERVICE_ADDR;
+    }
+
     let httpStatus = 200;
     try {
       await runWithSpan(span, async () => handler(request, response));
       httpStatus = response.statusCode;
+      if(httpStatus != 200)
+      {
+           errorCounter.add(1, { method, target, status: httpStatus, gateway: gateway, 'gateway.addr': gateway_addr });
+      }
     } catch (error) {
       span.recordException(error as Exception);
       span.setStatus({ code: SpanStatusCode.ERROR });
       httpStatus = 500;
+      errorCounter.add(1, { method, target, status: httpStatus, gateway: gateway, 'gateway.addr': gateway_addr });
       throw error;
     } finally {
-      requestCounter.add(1, { method, target, status: httpStatus });
+      requestCounter.add(1, { method, target, status: httpStatus, gateway: gateway, 'gateway.addr': gateway_addr });
       span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, httpStatus);
       if (baggage?.getEntry('synthetic_request')?.value == 'true') {
         span.end();

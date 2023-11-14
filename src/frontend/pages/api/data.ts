@@ -13,11 +13,11 @@ const handler = async ({ method, query }: NextApiRequest, res: NextApiResponse<T
     case 'GET': {
       const { contextKeys = [] } = query;
       const { ads: adList } = await AdGateway.listAds(Array.isArray(contextKeys) ? contextKeys : contextKeys.split(','));
-
       return res.status(200).json(adList);
     }
 
     default: {
+	console.log(res);
       return res.status(405).send('');
     }
   }
