@@ -7,10 +7,20 @@ const { v4: uuidv4 } = require('uuid');
 const logger = require('./logger');
 const tracer = trace.getTracer('paymentservice');
 const meter = metrics.getMeter('paymentservice');
-const transactionsCounter = meter.createCounter('app.payment.transactions')
+const transactionsCounter = meter.createCounter('app.payment.transactions');
+const transactionsResp = meter.createHistogram('app.payment.duration');
+
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min) + min); 
+}
+
 
 module.exports.charge = request => {
   const span = tracer.startSpan('charge');
+
+  const startTime = new Date().getTime();
 
   const {
     creditCardNumber: number,
@@ -50,10 +60,22 @@ module.exports.charge = request => {
     span.setAttribute('app.payment.charged', true);
   }
 
+  let usecase = process.env.LABGEN_CASE || "0000";
+
+  if(usecase == "0020")	// Use case 0020 slows this process down by ramdom amount
+  {
+  	let waitTill = new Date(new Date().getTime() + getRandomInt(200,1000));
+  	while(waitTill > new Date()){}
+  }
+
+  const endTime = new Date().getTime();
+  const executionTime = endTime - startTime;
+
   span.end();
 
   const { units, nanos, currencyCode } = request.amount;
-  logger.info({transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }}, "Transaction complete.");
-  transactionsCounter.add(1, {"app.payment.currency": currencyCode})
+  logger.info({transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }}, "Transaction complete. Time taken: " + executionTime);
+  transactionsCounter.add(1, {"app.payment.currency": currencyCode});
+  transactionsResp.record(executionTime);
   return { transactionId }
 }
