@@ -8,6 +8,7 @@ const logger = require('./logger');
 const tracer = trace.getTracer('paymentservice');
 const meter = metrics.getMeter('paymentservice');
 const transactionsCounter = meter.createCounter('app.payment.transactions');
+const revenue = meter.createHistogram('app.payment.revenue');
 const transactionsResp = meter.createHistogram('app.payment.duration');
 
 function getRandomInt(min, max) {
@@ -76,6 +77,9 @@ module.exports.charge = request => {
   const { units, nanos, currencyCode } = request.amount;
   logger.info({transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }}, "Transaction complete. Time taken: " + executionTime);
   transactionsCounter.add(1, {"app.payment.currency": currencyCode});
+  let val = parseFloat(request.amount.units.low + "." + (request.amount.nanos / 10000000));
+  console.log("Payment Value : " + val);
+  revenue.record(val, {"app.payment.currency": currencyCode});
   transactionsResp.record(executionTime);
   return { transactionId }
 }
