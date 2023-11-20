@@ -17,7 +17,6 @@ const handler = async ({ method, query }: NextApiRequest, res: NextApiResponse<T
     }
 
     default: {
-	console.log(res);
       return res.status(405).send('');
     }
   }
