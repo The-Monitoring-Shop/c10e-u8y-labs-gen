@@ -102,23 +102,31 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
     try {
       await runWithSpan(span, async () => handler(request, response));
       httpStatus = response.statusCode;
-      if(httpStatus != 200)
-      {
-           errorCounter.add(1, { method, target, status: httpStatus, gateway: gateway, 'gateway.addr': gateway_addr });
-      }
     } catch (error) {
       span.recordException(error as Exception);
       span.setStatus({ code: SpanStatusCode.ERROR });
       httpStatus = 500;
+      console.error(new Date() + ": Caught Error When Calling Gateway " + gateway);
+      //console.error(error as Exception);
       errorCounter.add(1, { method, target, status: httpStatus, gateway: gateway, 'gateway.addr': gateway_addr });
-      throw error;
-    } finally {
       requestCounter.add(1, { method, target, status: httpStatus, gateway: gateway, 'gateway.addr': gateway_addr });
       span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, httpStatus);
       if (baggage?.getEntry('synthetic_request')?.value == 'true') {
         span.end();
       }
-    }
+      throw error;
+    } 
+    //finally {
+      requestCounter.add(1, { method, target, status: httpStatus, gateway: gateway, 'gateway.addr': gateway_addr });
+      span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, httpStatus);
+      if (baggage?.getEntry('synthetic_request')?.value == 'true') {
+        span.end();
+      }
+      if(httpStatus != 200)
+      {
+           errorCounter.add(1, { method, target, status: httpStatus, gateway: gateway, 'gateway.addr': gateway_addr });
+      }
+    //}
   };
 };
 
