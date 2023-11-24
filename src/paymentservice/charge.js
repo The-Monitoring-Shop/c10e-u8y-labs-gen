@@ -8,6 +8,7 @@ const logger = require('./logger');
 const tracer = trace.getTracer('paymentservice');
 const meter = metrics.getMeter('paymentservice');
 const transactionsCounter = meter.createCounter('app.payment.transactions');
+const paymentFail = meter.createCounter('app.payment.failed');
 const revenue = meter.createHistogram('app.payment.revenue');
 const transactionsResp = meter.createHistogram('app.payment.duration');
 
@@ -36,20 +37,34 @@ module.exports.charge = request => {
   const card = cardValidator(number);
   const { card_type: cardType, valid } = card.getCardDetails();
 
+  const { units, nanos, currencyCode } = request.amount;
+
+  let usecase = process.env.LABGEN_CASE || "0000";
+
   span.setAttributes({
     'app.payment.card_type': cardType,
     'app.payment.card_valid': valid
   });
 
+  let val = parseFloat(request.amount.units.low + "." + (request.amount.nanos / 10000000));
+  console.log("Payment Value : " + val + ". Usecase = " + usecase + ". CardType = " + cardType);
+/*
   if (!valid) {
+    paymentFail.add(1, {"app.payment.currency": currencyCode});
+    console.error('Credit card info is invalid.');
     throw new Error('Credit card info is invalid.');
   }
+  */
 
   if (!['visa', 'mastercard'].includes(cardType)) {
+    paymentFail.add(1, {"app.payment.currency": currencyCode, 'cardType': cardType});
+    console.error(`Sorry, we cannot process ${cardType} credit cards. Only VISA or MasterCard is accepted.`);
     throw new Error(`Sorry, we cannot process ${cardType} credit cards. Only VISA or MasterCard is accepted.`);
   }
 
-  if ((currentYear * 12 + currentMonth) > (year * 12 + month)) {
+  if ((currentYear * 12 + currentMonth) > (year * 12 + month) || (usecase == "0030" && cardType == 'mastercard')) {
+    paymentFail.add(1, {"app.payment.currency": currencyCode, 'cardType': cardType});
+    console.error(`The credit card (ending ${lastFourDigits}) expired on ${month}/${year}.`);
     throw new Error(`The credit card (ending ${lastFourDigits}) expired on ${month}/${year}.`);
   }
 
@@ -60,8 +75,6 @@ module.exports.charge = request => {
   } else {
     span.setAttribute('app.payment.charged', true);
   }
-
-  let usecase = process.env.LABGEN_CASE || "0000";
 
   if(usecase == "0020")	// Use case 0020 slows this process down by ramdom amount
   {
@@ -74,11 +87,8 @@ module.exports.charge = request => {
 
   span.end();
 
-  const { units, nanos, currencyCode } = request.amount;
   logger.info({transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }}, "Transaction complete. Time taken: " + executionTime);
   transactionsCounter.add(1, {"app.payment.currency": currencyCode});
-  let val = parseFloat(request.amount.units.low + "." + (request.amount.nanos / 10000000));
-  console.log("Payment Value : " + val);
   revenue.record(val, {"app.payment.currency": currencyCode});
   transactionsResp.record(executionTime);
   return { transactionId }

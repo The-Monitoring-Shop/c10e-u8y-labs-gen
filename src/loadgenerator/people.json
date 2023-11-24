@@ -10,7 +10,7 @@
         },
         "userCurrency": "USD",
         "creditCard": {
-            "creditCardNumber": "4432-8015-6152-0454",
+            "creditCardNumber": "5473-8015-6152-0454",
             "creditCardExpirationMonth": 1,
             "creditCardExpirationYear": 2039,
             "creditCardCvv": 672
@@ -27,7 +27,7 @@
         },
         "userCurrency": "USD",
         "creditCard": {
-            "creditCardNumber": "4532-4211-7434-1278",
+            "creditCardNumber": "5473-4211-7434-1278",
             "creditCardExpirationMonth": 2,
             "creditCardExpirationYear": 2039,
             "creditCardCvv": 114
@@ -44,7 +44,7 @@
         },
         "userCurrency": "USD",
         "creditCard": {
-            "creditCardNumber": "4532-6178-2799-1951",
+            "creditCardNumber": "5473-6178-2799-1951",
             "creditCardExpirationMonth": 3,
             "creditCardExpirationYear": 2039,
             "creditCardCvv": 239
@@ -61,7 +61,7 @@
         },
         "userCurrency": "USD",
         "creditCard": {
-            "creditCardNumber": "4539-1103-5661-7083",
+            "creditCardNumber": "5473-1103-5661-7083",
             "creditCardExpirationMonth": 4,
             "creditCardExpirationYear": 2039,
             "creditCardCvv": 784
