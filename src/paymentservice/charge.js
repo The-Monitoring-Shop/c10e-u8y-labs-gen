@@ -9,7 +9,8 @@ const tracer = trace.getTracer('paymentservice');
 const meter = metrics.getMeter('paymentservice');
 const transactionsCounter = meter.createCounter('app.payment.transactions');
 const paymentFail = meter.createCounter('app.payment.failed');
-const revenue = meter.createHistogram('app.payment.revenue');
+//const revenue = meter.createHistogram('app.payment.revenue');
+const revenue = meter.createCounter('app.payment.revenue');
 const transactionsResp = meter.createHistogram('app.payment.duration');
 
 function getRandomInt(min, max) {
@@ -88,8 +89,9 @@ module.exports.charge = request => {
   span.end();
 
   logger.info({transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }}, "Transaction complete. Time taken: " + executionTime);
-  transactionsCounter.add(1, {"app.payment.currency": currencyCode});
-  revenue.record(val, {"app.payment.currency": currencyCode});
+  transactionsCounter.add(1, {"app.payment.currency": currencyCode, 'cardType': cardType});
+  //revenue.record(val, {"app.payment.currency": currencyCode});
+  revenue.add(val, {"app.payment.currency": currencyCode});
   transactionsResp.record(executionTime);
   return { transactionId }
 }
