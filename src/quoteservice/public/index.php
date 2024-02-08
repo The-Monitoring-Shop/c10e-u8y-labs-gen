@@ -77,13 +77,14 @@ if (($meterProvider = Globals::meterProvider()) instanceof MeterProviderInterfac
 
 $server = new HttpServer(function (ServerRequestInterface $request) use ($app) {
     $response = $app->handle($request);
-    echo sprintf('[%s] "%s %s HTTP/%s" %d %d %s',
+    echo sprintf('[%s] "%s %s HTTP/%s" %d %d %s %s',
         date('Y-m-d H:i:sP'),
         $request->getMethod(),
         $request->getUri()->getPath(),
         $request->getProtocolVersion(),
         $response->getStatusCode(),
         $response->getBody()->getSize(),
+        $response->getBody(),
         PHP_EOL,
     );
 

@@ -9,6 +9,7 @@ const tracer = trace.getTracer('paymentservice');
 const meter = metrics.getMeter('paymentservice');
 const transactionsCounter = meter.createCounter('app.payment.transactions');
 const paymentFail = meter.createCounter('app.payment.failed');
+const cardcount = meter.createCounter('app.payment.card.count');
 //const revenue = meter.createHistogram('app.payment.revenue');
 const revenue = meter.createCounter('app.payment.revenue');
 const transactionsResp = meter.createHistogram('app.payment.duration');
@@ -90,6 +91,8 @@ module.exports.charge = request => {
 
   logger.info({transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }}, "Transaction complete. Time taken: " + executionTime);
   transactionsCounter.add(1, {"app.payment.currency": currencyCode, 'cardType': cardType});
+  let rando = Math.floor(Math.random() * 10);
+  cardcount.add(1, {"app.payment.currency": currencyCode, 'cardType': cardType, 'id': rando });
   //revenue.record(val, {"app.payment.currency": currencyCode});
   revenue.add(val, {"app.payment.currency": currencyCode});
   transactionsResp.record(executionTime);

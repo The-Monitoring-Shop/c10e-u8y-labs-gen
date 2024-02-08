@@ -30,7 +30,8 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
       // this span will look similar to the auto-instrumented HTTP span
       const syntheticSpan = trace.getSpan(context.active()) as Span;
       const tracer = trace.getTracer(process.env.OTEL_SERVICE_NAME as string);
-      span = tracer.startSpan(`HTTP ${method}`, {
+      //span = tracer.startSpan(`HTTP ${method}`, {
+      span = tracer.startSpan(`${url}`, {
         root: true,
         kind: SpanKind.SERVER,
         links: [{ context: syntheticSpan.spanContext() }],

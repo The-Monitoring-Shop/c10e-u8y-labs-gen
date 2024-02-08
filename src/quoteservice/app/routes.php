@@ -7,6 +7,7 @@
 use OpenTelemetry\API\Common\Instrumentation\Globals;
 use OpenTelemetry\API\Trace\Span;
 use OpenTelemetry\API\Trace\SpanKind;
+use OpenTelemetry\API\Trace\StatusCode;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\App;
@@ -20,6 +21,7 @@ function calculateQuote($jsonObject): float
         ->startSpan();
     $childSpan->addEvent('Calculating quote');
 
+
     try {
         if (!array_key_exists('numberOfItems', $jsonObject)) {
             throw new \InvalidArgumentException('numberOfItems not provided');
@@ -27,8 +29,25 @@ function calculateQuote($jsonObject): float
         $numberOfItems = intval($jsonObject['numberOfItems']);
         $quote = round(8.90 * $numberOfItems, 2);
 
+        // Case 0015 - add a fake error
+        $labgen_case = getenv('LABGEN_CASE');
+        //echo "labgen case " . $labgen_case;
+        if ($labgen_case == "0015")
+        {
+		echo "labgen case: " . $labgen_case . "\n";
+		if (rand(1,4) == 4) // One in 4 chance of throwing divide by zero error
+		{
+        		echo "ERROR: Divide by zero!\n";
+        		$childSpan->recordException(new \Exception('Division by zero.'));
+        	        //$childSpan->setAttribute('http.status_code', 500);
+        	        $childSpan->setStatus(StatusCode::STATUS_ERROR);
+			$quote = 0;
+		}
+        }
+
         $childSpan->setAttribute('app.quote.items.count', $numberOfItems);
         $childSpan->setAttribute('app.quote.cost.total', $quote);
+
 
         $childSpan->addEvent('Quote calculated, returning its value');
     } catch (\Exception $exception) {
@@ -50,6 +69,12 @@ return function (App $app) {
 
         $payload = json_encode($data);
         $response->getBody()->write($payload);
+	if($data == 0 )
+	{
+		//echo $response->getStatusCode() . "\n";
+		$response = $response->withStatus(500,'');
+        	$response->getBody()->write(json_encode(''));
+	}
 
         $span->addEvent('Quote processed, response sent back', [
             'app.quote.cost.total' => $data
