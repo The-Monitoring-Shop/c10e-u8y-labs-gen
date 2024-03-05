@@ -8,6 +8,7 @@
 import os
 import random
 from concurrent import futures
+import time
 
 # Pip
 import grpc
@@ -83,6 +84,7 @@ def get_product_list(request_product_ids):
                 cached_ids = cached_ids + response_ids
                 cached_ids = cached_ids + cached_ids[:len(cached_ids) // 4]
                 product_ids = cached_ids
+                product_names = [x.name for x in cat_response.products]
             else:
                 span.set_attribute("app.cache_hit", True)
                 logger.info("get_product_list: cache hit")
@@ -91,6 +93,10 @@ def get_product_list(request_product_ids):
             span.set_attribute("app.recommendation.cache_enabled", False)
             cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
             product_ids = [x.id for x in cat_response.products]
+            product_names = [x.name for x in cat_response.products]
+
+
+        #logger.info(f"cat_response: {cat_response}")
 
         span.set_attribute("app.products.count", len(product_ids))
 
@@ -105,9 +111,36 @@ def get_product_list(request_product_ids):
         # Fetch product ids from indices
         prod_list = [filtered_products[i] for i in indices]
 
-        span.set_attribute("app.filtered_products.list", prod_list)
+        #span.set_attribute("app.filtered_products.list", prod_list)
+        # logger.info(f"app.filtered_products.list: {prod_list}")
+        prod_list_string = ""
+        for prod_id in prod_list:
+            prod_list_string = prod_list_string + prod_id + ","
+            prod_name = product_names[product_ids.index(prod_id)]
+            logger.info(f"{prod_id} = {prod_name}")
+            proc_res = process_recommended_product(prod_id, prod_name)
+
+        span.set_attribute("app.filtered_products.list", prod_list_string)
 
         return prod_list
+
+
+def process_recommended_product(prod_id,prod_name):
+    with tracer.start_as_current_span("process_recommended_product") as span:
+        result = 0
+
+        span.set_attribute("app.recommended_product.id", prod_id)
+        span.set_attribute("app.recommended_product.name", prod_name)
+
+        usecase_compare = "0021"
+        usecase = os.environ.get("LABGEN_CASE", "0000")
+
+        if usecase == usecase_compare:
+            problem_id = "9SIQT8TOJO"
+            if problem_id == prod_id:
+                time.sleep(random.uniform(0.1,0.5))
+
+        return result
 
 
 def must_map_env(key: str):
