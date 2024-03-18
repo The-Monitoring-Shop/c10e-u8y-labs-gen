@@ -8,7 +8,8 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY ./src/frontend/package*.json ./
-RUN npm ci
+#RUN npm ci
+RUN npm ci --fetch-retries=10
 
 FROM node:18-alpine AS builder
 RUN apk add --no-cache libc6-compat protobuf-dev protoc

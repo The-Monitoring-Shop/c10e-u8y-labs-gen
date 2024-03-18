@@ -69,6 +69,10 @@ class WebsiteUser(HttpUser):
     def index(self):
         self.client.get("/")
 
+    @task(1)
+    def ping(self):
+        self.client.get("/api/ping")
+
     @task(10)
     def browse_product(self):
         self.client.get("/api/products/" + random.choice(products))
