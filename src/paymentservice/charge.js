@@ -49,7 +49,8 @@ module.exports.charge = request => {
   });
 
   let val = parseFloat(request.amount.units.low + "." + (request.amount.nanos / 10000000));
-  console.log("Payment Value : " + val + ". Usecase = " + usecase + ". CardType = " + cardType);
+  //console.log("Payment Value : " + val + ". Usecase = " + usecase + ". CardType = " + cardType);
+  console.log("Payment Value : " + val + ". Usecase = " + usecase + ". CardType = " + cardType + ". Currency = " + currencyCode);
 /*
   if (!valid) {
     paymentFail.add(1, {"app.payment.currency": currencyCode});

@@ -279,6 +279,10 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq
 
 	if err := cs.sendOrderConfirmation(ctx, req.Email, orderResult); err != nil {
 		log.Warnf("failed to send order confirmation to %q: %+v", req.Email, err)
+		//log.Errorf("failed to send order confirmation to %q: %+v", req.Email, err)
+		//span.AddEvent("error", trace.WithAttributes(attribute.String("exception.message", err.Error())))
+		//span.RecordError(err, trace.WithAttributes(attribute.String("exception.message", err.Error())))
+		span.SetStatus(1, err.Error())
 	} else {
 		log.Infof("order confirmation email sent to %q", req.Email)
 	}
