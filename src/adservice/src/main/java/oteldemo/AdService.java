@@ -37,6 +37,19 @@ import oteldemo.Demo.AdResponse;
 import oteldemo.Demo.GetFlagResponse;
 import oteldemo.FeatureFlagServiceGrpc.FeatureFlagServiceBlockingStub;
 
+import io.opentelemetry.api.metrics.DoubleHistogram;
+import java.util.concurrent.ThreadLocalRandom;
+import io.opentelemetry.api.OpenTelemetry;
+import java.util.concurrent.ThreadLocalRandom;
+import io.opentelemetry.sdk.metrics.InstrumentSelector;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.View;
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
+import io.opentelemetry.sdk.metrics.Aggregation;
+import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+
+
 public final class AdService {
 
   private static final Logger logger = LogManager.getLogger(AdService.class);
@@ -56,6 +69,38 @@ public final class AdService {
           .counterBuilder("app.ads.ad_requests")
           .setDescription("Counts ad requests by request and response type")
           .build();
+
+
+  private static final SdkMeterProvider sdkMeterProvider =
+      SdkMeterProvider.builder()
+          .registerView(
+              // Target this one histogram and use defaults (maxBuckets: 160 maxScale: 20)
+              InstrumentSelector.builder().setName("app.ads.telescope_ad").build(),
+              View.builder()
+                  .setAggregation(Aggregation.base2ExponentialBucketHistogram())
+                  .build())
+          .registerMetricReader(
+              PeriodicMetricReader.builder(OtlpGrpcMetricExporter.builder().build())
+                  .build())
+          .build();
+
+  private static OpenTelemetry sdk = OpenTelemetrySdk.builder().setMeterProvider(sdkMeterProvider).build();
+  private static final Meter expmeter = sdk.getMeter("io.opentelemetry.example.metrics");
+
+  private static final DoubleHistogram histogram =
+      expmeter
+          .histogramBuilder("app.ads.telescope_ad")
+          .setDescription("Range of telescopes advertised")
+          .build();
+
+  /* -- 
+
+  private static final DoubleHistogram histogram =
+      meter
+          .histogramBuilder("app.ads.telescope_ad")
+          .setDescription("Range of telescopes advertised")
+          .build();
+   -- */
 
   private static final AttributeKey<String> adRequestTypeKey =
       AttributeKey.stringKey("app.ads.ad_request_type");
@@ -175,6 +220,13 @@ public final class AdService {
             1,
             Attributes.of(
                 adRequestTypeKey, adRequestType.name(), adResponseTypeKey, adResponseType.name()));
+
+	double ts_cost = (double)ThreadLocalRandom.current().nextInt(89, 19560);
+
+	logger.info("Telescope Advert. Cost = " + ts_cost);
+
+        histogram.record(ts_cost);
+
 
         if (checkAdFailure()) {
           logger.warn(ADSERVICE_FAIL_FEATURE_FLAG + " fail feature flag enabled");

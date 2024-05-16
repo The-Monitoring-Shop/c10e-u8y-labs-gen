@@ -14,6 +14,31 @@ const cardcount = meter.createCounter('app.payment.card.count');
 const revenue = meter.createCounter('app.payment.revenue');
 const transactionsResp = meter.createHistogram('app.payment.duration');
 
+// The telescope purchase metric - used for advanced PromQL courses
+// For each 'real' purchase through this service, we'll also add a pretend purchase to this metrici as well.
+// Built from randomisations of the 'tele_specs' json object
+
+const telescopePurchase = meter.createHistogram('app.telescope.purchase');
+const tele_specs = {
+		ts: ["Bresser","Celestron","Meade","Takahashi","Sky-Watcher"],
+		type: [
+			{type: "beginner", low: 89, mid: 150, high: 299},
+			{type: "explorer", low: 300, mid: 700, high: 999},
+			{type: "intermediate", low: 1000, mid: 2500, high: 4999},
+			{type: "advanced", low: 5000, mid: 7500, high: 9999},
+			{type: "professional", low: 10000, mid: 15000, high: 19560}],
+		//mag: [40, 100, 200, 300],
+		mag: [40],
+		//weight: [2, 10, 50, 100],
+		weight: [2],
+		phone: ["N","Y"],
+		kit: ["Y","N"],
+		sun_filter: ["N","Y"],
+		cents: [0, 50, 99]
+	};
+
+
+
 function getRandomInt(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
@@ -97,5 +122,55 @@ module.exports.charge = request => {
   //revenue.record(val, {"app.payment.currency": currencyCode});
   revenue.add(val, {"app.payment.currency": currencyCode});
   transactionsResp.record(executionTime);
+
+
+  // Build random, but sensible data for the telescopePurchase histogram
+
+  let ts = tele_specs.ts[getRandomInt(0,tele_specs.ts.length)];
+  let type = tele_specs.type[getRandomInt(0,tele_specs.type.length)];
+
+  let mag_idx = getRandomInt(0,tele_specs.mag.length);
+  let mag = tele_specs.mag[mag_idx];
+
+  let phone_idx = getRandomInt(0,tele_specs.phone.length);
+  let phone = tele_specs.phone[phone_idx];
+	
+  let kit_idx = getRandomInt(0,tele_specs.kit.length);
+  let kit = tele_specs.kit[kit_idx];
+
+  let sun_filter = tele_specs.sun_filter[getRandomInt(0,tele_specs.sun_filter.length)];
+  let cents = tele_specs.cents[getRandomInt(0,tele_specs.cents.length)];
+
+  let price_weighting = (tele_specs.mag.length + tele_specs.phone.length + tele_specs.kit.length) / 2;
+
+  let ts_value = 0;
+  let weight = 2;
+
+  if ((mag_idx + phone_idx + kit_idx) > price_weighting)
+  {
+	  ts_value = getRandomInt(type.mid, type.high) + (cents / 100);
+	  weight = tele_specs.weight[getRandomInt(parseInt(tele_specs.weight.length / 2),tele_specs.weight.length)];
+  }
+  else
+  {
+	  ts_value = getRandomInt(type.low, type.mid) + (cents / 100);
+	  weight = tele_specs.weight[getRandomInt(0,parseInt(tele_specs.weight.length / 2))];
+  }
+	 
+  let labels = {
+	  ts: ts,
+	  magnification: mag,
+	  phone: phone,
+	  weight: weight,
+	  'sun-filter': sun_filter,
+	  type: type.type,
+	  kit: kit
+  };
+
+  //logger.info(JSON.stringify(labels) + " " + ts_value);
+
+  telescopePurchase.record(ts_value,labels);
+
+
   return { transactionId }
 }
