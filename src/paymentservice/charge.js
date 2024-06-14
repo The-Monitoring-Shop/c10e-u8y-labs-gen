@@ -139,24 +139,37 @@ module.exports.charge = request => {
   let kit = tele_specs.kit[kit_idx];
 
   let sun_filter = tele_specs.sun_filter[getRandomInt(0,tele_specs.sun_filter.length)];
-  let cents = tele_specs.cents[getRandomInt(0,tele_specs.cents.length)];
+  //let cents = tele_specs.cents[getRandomInt(0,tele_specs.cents.length)];
 
-  let price_weighting = (tele_specs.mag.length + tele_specs.phone.length + tele_specs.kit.length) / 2;
-
-  let ts_value = 0;
+  let ts_value = type.mid;
   let weight = 2;
 
-  if ((mag_idx + phone_idx + kit_idx) > price_weighting)
+  /*
+
+  let price_weighting = (tele_specs.mag.length + tele_specs.phone.length + tele_specs.kit.length) / 3;
+  let ts_value = 0;
+
+  let this_weighting = mag_idx + phone_idx + kit_idx;
+
+  if (this_weighting > price_weighting)
   {
-	  ts_value = getRandomInt(type.mid, type.high) + (cents / 100);
+	  ts_value = type.high;
 	  weight = tele_specs.weight[getRandomInt(parseInt(tele_specs.weight.length / 2),tele_specs.weight.length)];
   }
   else
   {
-	  ts_value = getRandomInt(type.low, type.mid) + (cents / 100);
+	  if(getRandomInt(0, 2) == 1)
+          {
+                  ts_value = type.mid;
+          }
+          else
+          {
+                  ts_value = type.low;
+          }
 	  weight = tele_specs.weight[getRandomInt(0,parseInt(tele_specs.weight.length / 2))];
   }
-	 
+  */
+
   let labels = {
 	  ts: ts,
 	  magnification: mag,
@@ -167,7 +180,8 @@ module.exports.charge = request => {
 	  kit: kit
   };
 
-  //logger.info(JSON.stringify(labels) + " " + ts_value);
+
+  //logger.info(this_weighting + " " + price_weighting + " " + ts_value);
 
   telescopePurchase.record(ts_value,labels);
 

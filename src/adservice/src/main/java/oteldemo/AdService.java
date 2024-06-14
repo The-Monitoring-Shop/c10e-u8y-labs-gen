@@ -28,6 +28,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.time.Instant;
+import java.lang.Thread;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,7 +72,7 @@ public final class AdService {
           .setDescription("Counts ad requests by request and response type")
           .build();
 
-
+/*
   private static final SdkMeterProvider sdkMeterProvider =
       SdkMeterProvider.builder()
           .registerView(
@@ -93,14 +95,19 @@ public final class AdService {
           .setDescription("Range of telescopes advertised")
           .build();
 
-  /* -- 
+   -- */
 
   private static final DoubleHistogram histogram =
       meter
           .histogramBuilder("app.ads.telescope_ad")
           .setDescription("Range of telescopes advertised")
           .build();
-   -- */
+
+  private static final DoubleHistogram duration =
+      meter
+          .histogramBuilder("app.ads.duration")
+          .setDescription("Duration of adservice request")
+          .build();
 
   private static final AttributeKey<String> adRequestTypeKey =
       AttributeKey.stringKey("app.ads.ad_request_type");
@@ -182,6 +189,9 @@ public final class AdService {
      */
     @Override
     public void getAds(AdRequest req, StreamObserver<AdResponse> responseObserver) {
+
+      long then = Instant.now().toEpochMilli();
+
       AdService service = AdService.getInstance();
 
       // get the current span in context
@@ -226,6 +236,26 @@ public final class AdService {
 	logger.info("Telescope Advert. Cost = " + ts_cost);
 
         histogram.record(ts_cost);
+
+	try{
+		Thread.sleep(ThreadLocalRandom.current().nextInt(1, 100));
+		String usecase = System.getenv("LABGEN_CASE");
+		logger.info("Usecase = [" + usecase + "]");
+		if(usecase.equals("0022"))
+		{
+			int sleep_time = ThreadLocalRandom.current().nextInt(100, 5000);
+			logger.info("Sleeping for " + sleep_time);
+			Thread.sleep(sleep_time);
+		}
+	}
+	catch (Exception e)
+	{
+	}
+	
+      
+	long now = Instant.now().toEpochMilli();
+	long dur = now - then;
+	duration.record(dur);
 
 
         if (checkAdFailure()) {
