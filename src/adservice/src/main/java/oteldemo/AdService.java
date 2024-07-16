@@ -71,6 +71,11 @@ public final class AdService {
           .counterBuilder("app.ads.ad_requests")
           .setDescription("Counts ad requests by request and response type")
           .build();
+  private static final LongCounter slowCounter =
+      meter
+          .counterBuilder("app.ads.telescope_ad_slow")
+          .setDescription("Counts slow ad requests")
+          .build();
 
 /*
   private static final SdkMeterProvider sdkMeterProvider =
@@ -256,6 +261,10 @@ public final class AdService {
 	long now = Instant.now().toEpochMilli();
 	long dur = now - then;
 	duration.record(dur);
+	if(dur >= 2000)
+	{
+		slowCounter.add(1);
+	}
 
 
         if (checkAdFailure()) {
