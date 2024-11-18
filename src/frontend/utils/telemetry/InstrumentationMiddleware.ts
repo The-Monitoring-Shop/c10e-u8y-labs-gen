@@ -18,6 +18,11 @@ const { CHECKOUT_SERVICE_ADDR = '' } = process.env;
 const { PRODUCT_CATALOG_SERVICE_ADDR = '' } = process.env;
 const { RECOMMENDATION_SERVICE_ADDR = '' } = process.env;
 
+function randomIntFromInterval(min: number, max: number) 
+{
+	return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
 const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
   return async (request, response) => {
     const { headers, method, url = '', httpVersion } = request;
@@ -52,6 +57,7 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
     if (request.query['sessionId'] != null) {
       span.setAttribute(AttributeNames.SESSION_ID, request.query['sessionId']);
     }
+    
 
     let gateway = "";
     let gateway_addr = "";
@@ -70,8 +76,55 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
     }
     if(api == "cart")
     {
-            gateway = "cartservice";
-            gateway_addr = CART_SERVICE_ADDR;
+		gateway = "cartservice";
+		gateway_addr = CART_SERVICE_ADDR;
+
+		if(request.body.hasOwnProperty('item'))
+		{
+			if(request.body.item.hasOwnProperty('productId'))
+			{
+      	    			span.setAttribute("app.product_id", request.body.item.productId);
+	    			if (process.env.LABGEN_CASE == "0043")
+ 				{
+					if(request.body.item.productId == "2ZYFJ3GM2N")
+					{
+	   					await new Promise(r => setTimeout(r, randomIntFromInterval(500, 2500)));
+					}
+				}
+			}
+			if(request.body.item.hasOwnProperty('quantity'))
+			{
+      	    			span.setAttribute("app.quantity", request.body.item.quantity);
+			}
+		}
+		if(request.body.hasOwnProperty('userId'))
+		{
+      	    		span.setAttribute("app.user_id", request.body.userId);
+		}
+
+
+
+	    /*
+
+    	    if (request.body['item']['productId'] != null) 
+	    {
+      	    	span.setAttribute("app.product_id", request.body.item['productId']);
+	    }
+    	    if (request.body.item['quantity'] != null) 
+	    {
+      	    	span.setAttribute("app.quantity", request.body.item['quantity']);
+	    }
+    	    if (request.body['userId'] != null) 
+	    {
+      	    	span.setAttribute("app.user_id", request.body['userId']);
+	    }
+
+
+	    if (process.env.LABGEN_CASE == "0043")
+	    {
+	    	await new Promise(r => setTimeout(r, randomIntFromInterval(500, 2500)));
+	    }
+	   */
     }
     if(api == "currency")
     {

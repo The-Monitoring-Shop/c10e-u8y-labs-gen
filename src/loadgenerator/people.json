@@ -151,5 +151,22 @@
             "creditCardExpirationYear": 2039,
             "creditCardCvv": 682
         }
+    },
+    {
+        "email": "fred@example.com",
+        "address": {
+            "streetAddress": "123 Example Blvd",
+            "zipCode": "83814",
+            "city": "Coeur d'Alene",
+            "state": "ID",
+            "country": "United States"
+        },
+        "userCurrency": "USD",
+        "creditCard": {
+            "creditCardNumber": "4485-4803-8707-3547",
+            "creditCardExpirationMonth": 9,
+            "creditCardExpirationYear": 2039,
+            "creditCardCvv": 682
+        }
     }
 ]

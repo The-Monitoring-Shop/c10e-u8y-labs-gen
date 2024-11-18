@@ -265,12 +265,16 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq
 		ShippingAddress:    req.Address,
 		Items:              prep.orderItems,
 	}
+	//log.Infof("City %q", req.Address.GetCity())
 
 	shippingCostFloat, _ := strconv.ParseFloat(fmt.Sprintf("%d.%02d", prep.shippingCostLocalized.GetUnits(), prep.shippingCostLocalized.GetNanos()/1000000000), 64)
 	totalPriceFloat, _ := strconv.ParseFloat(fmt.Sprintf("%d.%02d", total.GetUnits(), total.GetNanos()/1000000000), 64)
 
 	span.SetAttributes(
 		attribute.String("app.order.id", orderID.String()),
+		attribute.String("app.shipping.city", req.Address.GetCity()),
+		attribute.String("app.shipping.state", req.Address.GetState()),
+		attribute.String("app.shipping.country", req.Address.GetCountry()),
 		attribute.Float64("app.shipping.amount", shippingCostFloat),
 		attribute.Float64("app.order.amount", totalPriceFloat),
 		attribute.Int("app.order.items.count", len(prep.orderItems)),
@@ -284,8 +288,17 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq
 		//span.RecordError(err, trace.WithAttributes(attribute.String("exception.message", err.Error())))
 		span.SetStatus(1, err.Error())
 	} else {
-		log.Infof("order confirmation email sent to %q", req.Email)
+		if (req.Address.GetCity() == "Coeur d'Alene") && (os.Getenv("LABGEN_CASE") == "0043") {
+			log.Warnf("failed to send order confirmation to %q: The city contains an invalid character!", req.Email)
+			span.SetStatus(1, "The city " + req.Address.GetCity() + " contains an invalid character!")
+			span.AddEvent("error", trace.WithAttributes(attribute.String("exception.message", "The city " + req.Address.GetCity() + " contains an invalid character!")))
+
+		} else {
+			log.Infof("order confirmation email sent to %q", req.Email)
+		}
 	}
+
+
 
 	// send to kafka only if kafka broker address is set
 	if cs.kafkaBrokerSvcAddr != "" {
