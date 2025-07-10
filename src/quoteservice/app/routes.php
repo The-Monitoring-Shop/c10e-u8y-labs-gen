@@ -44,6 +44,15 @@ function calculateQuote($jsonObject): float
 			$quote = 0;
 		}
         }
+	// Case 0017 - Same as case 0015, but instead of 1 in 4 chance, it throws every time
+        if ($labgen_case == "0017")
+        {
+                echo "labgen case: " . $labgen_case . "\n";
+                echo "ERROR: Divide by zero!\n";
+                $childSpan->recordException(new \Exception('Division by zero.'));
+                $childSpan->setStatus(StatusCode::STATUS_ERROR);
+                $quote = 0;
+        }
 
         $childSpan->setAttribute('app.quote.items.count', $numberOfItems);
         $childSpan->setAttribute('app.quote.cost.total', $quote);

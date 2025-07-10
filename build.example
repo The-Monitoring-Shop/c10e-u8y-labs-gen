@@ -1,0 +1,4 @@
+# Do this on the VM
+
+docker compose --env-file .env -f docker-compose.yml build frontend
+docker compose --env-file .env -f docker-compose.yml push frontend
